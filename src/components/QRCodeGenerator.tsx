@@ -3,6 +3,7 @@ import { X, Download, QrCode, FileImage, FileText, Check } from 'lucide-react';
 import QRCode from 'qrcode';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useMenuTheme } from '../hooks/useMenuTheme';
 
 interface QRCodeGeneratorProps {
   userId: string;
@@ -17,6 +18,7 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
   numberOfTables,
   onClose,
 }) => {
+  const { theme } = useMenuTheme(userId);
   const [selectedTables, setSelectedTables] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -24,6 +26,43 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
   const qrContainerRef = useRef<HTMLDivElement>(null);
 
   const tables = Array.from({ length: numberOfTables }, (_, i) => i + 1);
+
+  const getThemeColors = () => {
+    switch (theme) {
+      case 'modern':
+        return {
+          primary: '#3b82f6',
+          secondary: '#1e40af',
+          accent: '#60a5fa',
+          text: '#1f2937',
+          background: '#f8fafc'
+        };
+      case 'elegant':
+        return {
+          primary: '#d97706',
+          secondary: '#92400e',
+          accent: '#fbbf24',
+          text: '#374151',
+          background: '#fefdf8'
+        };
+      case 'minimal':
+        return {
+          primary: '#374151',
+          secondary: '#111827',
+          accent: '#6b7280',
+          text: '#111827',
+          background: '#ffffff'
+        };
+      default: // classic
+        return {
+          primary: '#059669',
+          secondary: '#047857',
+          accent: '#10b981',
+          text: '#1f2937',
+          background: '#f0fdf4'
+        };
+    }
+  };
 
   const handleTableSelect = (tableNumber: number) => {
     setSelectedTables(prev => 
@@ -80,6 +119,7 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
   const downloadSingleQR = async (tableNumber: number, format: 'png' | 'pdf') => {
     try {
       const qrDataURL = qrCodes[tableNumber] || await generateQRCode(tableNumber);
+      const colors = getThemeColors();
       
       if (format === 'png') {
         const link = document.createElement('a');
@@ -91,10 +131,16 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
         
+        // Add themed background
+        pdf.setFillColor(colors.background);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        
         // Add title
+        pdf.setTextColor(colors.text);
         pdf.setFontSize(20);
         pdf.text(businessName, pageWidth / 2, 30, { align: 'center' });
         
+        pdf.setTextColor(colors.primary);
         pdf.setFontSize(16);
         pdf.text(`Table ${tableNumber}`, pageWidth / 2, 50, { align: 'center' });
         
@@ -105,14 +151,26 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         
         pdf.addImage(qrDataURL, 'PNG', qrX, qrY, qrSize, qrSize);
         
+        // Add themed border around QR code
+        pdf.setDrawColor(colors.primary);
+        pdf.setLineWidth(2);
+        pdf.rect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10);
+        
         // Add URL
+        pdf.setTextColor(colors.text);
         pdf.setFontSize(10);
         const url = `${window.location.origin}/menu/${userId}/table/${tableNumber}`;
         pdf.text(url, pageWidth / 2, qrY + qrSize + 20, { align: 'center' });
         
         // Add instructions
+        pdf.setTextColor(colors.secondary);
         pdf.setFontSize(12);
         pdf.text('Scan this QR code to view our menu', pageWidth / 2, qrY + qrSize + 35, { align: 'center' });
+        
+        // Add themed footer
+        pdf.setTextColor(colors.accent);
+        pdf.setFontSize(8);
+        pdf.text(`Generated with ${theme.charAt(0).toUpperCase() + theme.slice(1)} Theme`, pageWidth / 2, pageHeight - 10, { align: 'center' });
         
         pdf.save(`table-${tableNumber}-qr.pdf`);
       }
@@ -126,6 +184,7 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     if (selectedTables.length === 0) return;
     
     setGenerating(true);
+    const colors = getThemeColors();
     
     try {
       if (format === 'png') {
@@ -148,10 +207,16 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
             pdf.addPage();
           }
           
+          // Add themed background
+          pdf.setFillColor(colors.background);
+          pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+          
           // Add title
+          pdf.setTextColor(colors.text);
           pdf.setFontSize(20);
           pdf.text(businessName, pageWidth / 2, 30, { align: 'center' });
           
+          pdf.setTextColor(colors.primary);
           pdf.setFontSize(16);
           pdf.text(`Table ${tableNumber}`, pageWidth / 2, 50, { align: 'center' });
           
@@ -163,14 +228,26 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           
           pdf.addImage(qrDataURL, 'PNG', qrX, qrY, qrSize, qrSize);
           
+          // Add themed border around QR code
+          pdf.setDrawColor(colors.primary);
+          pdf.setLineWidth(2);
+          pdf.rect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10);
+          
           // Add URL
+          pdf.setTextColor(colors.text);
           pdf.setFontSize(10);
           const url = `${window.location.origin}/menu/${userId}/table/${tableNumber}`;
           pdf.text(url, pageWidth / 2, qrY + qrSize + 20, { align: 'center' });
           
           // Add instructions
+          pdf.setTextColor(colors.secondary);
           pdf.setFontSize(12);
           pdf.text('Scan this QR code to view our menu', pageWidth / 2, qrY + qrSize + 35, { align: 'center' });
+          
+          // Add themed footer
+          pdf.setTextColor(colors.accent);
+          pdf.setFontSize(8);
+          pdf.text(`Generated with ${theme.charAt(0).toUpperCase() + theme.slice(1)} Theme`, pageWidth / 2, pageHeight - 10, { align: 'center' });
         }
         
         pdf.save(`${businessName.toLowerCase().replace(/\s+/g, '-')}-qr-codes.pdf`);

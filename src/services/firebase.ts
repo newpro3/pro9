@@ -568,8 +568,29 @@ class FirebaseService {
   // =======================
   // User Profile
   // =======================
+  async getUserProfile(userId: string): Promise<User | null> {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        return { id: userId, ...userDoc.data() } as User;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      return null;
+    }
+  }
+
   async updateUserProfile(userId: string, updates: Partial<User>): Promise<void> {
     try {
+      // Handle nested settings update
+      if (updates.settings) {
+        const currentUser = await this.getUserProfile(userId);
+        if (currentUser) {
+          updates.settings = { ...currentUser.settings, ...updates.settings };
+        }
+      }
+      
       await updateDoc(doc(db, 'users', userId), {
         ...updates,
         updated_at: new Date().toISOString(),

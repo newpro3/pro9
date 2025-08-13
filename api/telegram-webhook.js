@@ -3,12 +3,28 @@
 
 const axios = require('axios');
 
-// Firebase Admin SDK setup (you'll need to configure this)
-// const admin = require('firebase-admin');
-
 const BOT_TOKEN = '1941939105:AAHJ9XhL9uRyzQ9uhi3F4rKAQIbQ9D7YRs8';
 const TELEGRAM_API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
-const WEBHOOK_URL = 'https://tel-alun.vercel.app/api/telegram-webhook';
+
+// Firebase Admin SDK setup (simplified for webhook)
+const admin = require('firebase-admin');
+
+// Initialize Firebase Admin if not already initialized
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
+    });
+  } catch (error) {
+    console.error('Firebase Admin initialization error:', error);
+  }
+}
+
+const db = admin.firestore();
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -28,21 +44,57 @@ export default async function handler(req, res) {
         const isApproval = callbackData.startsWith('approve_order_');
         
         try {
-          // Here you would integrate with your Firebase service
-          // For now, we'll just send a confirmation message
+          if (isApproval) {
+            // Get pending order from Firestore
+            const pendingOrderDoc = await db.collection('pendingOrders').doc(orderId).get();
+            
+            if (pendingOrderDoc.exists) {
+              const pendingOrder = { id: orderId, ...pendingOrderDoc.data() };
+              
+              // Create approved order
+              const approvedOrder = {
+                ...pendingOrder,
+                status: 'approved',
+                paymentStatus: 'pending',
+                timestamp: new Date().toISOString(),
+              };
+              
+              // Add to orders collection
+              const orderRef = await db.collection('orders').add(approvedOrder);
+              
+              // Add items to table bill
+              await addToTableBill(pendingOrder.userId, pendingOrder.tableNumber, pendingOrder.items);
+              
+              // Send to departments
+              await sendOrderToDepartments(orderRef.id, { ...approvedOrder, id: orderRef.id }, pendingOrder.userId);
+              
+              // Remove pending order
+              await db.collection('pendingOrders').doc(orderId).delete();
+              
+              const responseMessage = `✅ Order ${orderId.slice(0, 8)} has been approved and sent to kitchen/bar!`;
+              
+              await axios.post(`${TELEGRAM_API_URL}/sendMessage`, {
+                chat_id: chatId,
+                text: responseMessage,
+                parse_mode: 'HTML'
+              });
+            } else {
+              throw new Error('Pending order not found');
+            }
+          } else {
+            // Reject order
+            await db.collection('pendingOrders').doc(orderId).delete();
+            
+            const responseMessage = `❌ Order ${orderId.slice(0, 8)} has been rejected.`;
+            
+            await axios.post(`${TELEGRAM_API_URL}/sendMessage`, {
+              chat_id: chatId,
+              text: responseMessage,
+              parse_mode: 'HTML'
+            });
+          }
           
-          const responseMessage = isApproval 
-            ? `✅ Order ${orderId.slice(0, 8)} has been approved and sent to kitchen/bar!`
-            : `❌ Order ${orderId.slice(0, 8)} has been rejected.`;
-          
-          // Send confirmation message
-          await axios.post(`${TELEGRAM_API_URL}/sendMessage`, {
-            chat_id: chatId,
-            text: responseMessage,
-            parse_mode: 'HTML'
-          });
-          
-          // Answer the callback query to remove the loading state
+          // Answer the callback query
           await axios.post(`${TELEGRAM_API_URL}/answerCallbackQuery`, {
             callback_query_id: callback_query.id,
             text: isApproval ? 'Order approved!' : 'Order rejected!',
@@ -66,6 +118,43 @@ export default async function handler(req, res) {
         const isApproval = callbackData.startsWith('approve_payment_');
         
         try {
+          if (isApproval) {
+            // Get payment confirmation
+            const confirmationDoc = await db.collection('paymentConfirmations').doc(confirmationId).get();
+            
+            if (confirmationDoc.exists) {
+              const confirmation = confirmationDoc.data();
+              
+              // Mark table bill as paid
+              const tableBillQuery = await db.collection('tableBills')
+                .where('userId', '==', confirmation.userId)
+                .where('tableNumber', '==', confirmation.tableNumber)
+                .where('status', '==', 'active')
+                .get();
+              
+              if (!tableBillQuery.empty) {
+                const tableBillDoc = tableBillQuery.docs[0];
+                await tableBillDoc.ref.update({
+                  status: 'paid',
+                  paymentConfirmationId: confirmationId,
+                  updatedAt: new Date().toISOString()
+                });
+              }
+              
+              // Update confirmation status
+              await db.collection('paymentConfirmations').doc(confirmationId).update({
+                status: 'approved',
+                processedAt: new Date().toISOString()
+              });
+            }
+          } else {
+            // Reject payment
+            await db.collection('paymentConfirmations').doc(confirmationId).update({
+              status: 'rejected',
+              processedAt: new Date().toISOString()
+            });
+          }
+          
           const responseMessage = isApproval 
             ? `✅ Payment ${confirmationId.slice(0, 8)} has been approved!`
             : `❌ Payment ${confirmationId.slice(0, 8)} has been rejected.`;
@@ -124,18 +213,135 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
-// Function to set up the webhook URL
-export async function setupWebhook() {
+
+// Helper functions
+async function addToTableBill(userId, tableNumber, items) {
   try {
-    const response = await axios.post(`${TELEGRAM_API_URL}/setWebhook`, {
-      url: WEBHOOK_URL,
-      allowed_updates: ['callback_query', 'message']
-    });
+    const tableBillQuery = await db.collection('tableBills')
+      .where('userId', '==', userId)
+      .where('tableNumber', '==', tableNumber)
+      .where('status', '==', 'active')
+      .get();
     
-    console.log('Webhook setup result:', response.data);
-    return response.data;
+    if (!tableBillQuery.empty) {
+      // Update existing bill
+      const tableBillDoc = tableBillQuery.docs[0];
+      const existingBill = tableBillDoc.data();
+      const updatedItems = [...existingBill.items];
+      
+      items.forEach(newItem => {
+        const idx = updatedItems.findIndex(item => item.id === newItem.id);
+        if (idx >= 0) {
+          updatedItems[idx].quantity += newItem.quantity;
+          updatedItems[idx].total += newItem.total;
+        } else {
+          updatedItems.push(newItem);
+        }
+      });
+      
+      const subtotal = updatedItems.reduce((sum, item) => sum + item.total, 0);
+      const tax = subtotal * 0.15;
+      const total = subtotal + tax;
+      
+      await tableBillDoc.ref.update({
+        items: updatedItems,
+        subtotal,
+        tax,
+        total,
+        updatedAt: new Date().toISOString(),
+      });
+    } else {
+      // Create new bill
+      const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+      const tax = subtotal * 0.15;
+      const total = subtotal + tax;
+      
+      await db.collection('tableBills').add({
+        tableNumber,
+        userId,
+        items,
+        subtotal,
+        tax,
+        total,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
   } catch (error) {
-    console.error('Error setting up webhook:', error);
-    throw error;
+    console.error('Error adding to table bill:', error);
+  }
+}
+
+async function sendOrderToDepartments(orderId, order, userId) {
+  try {
+    // Get menu items to determine departments
+    const menuItemsQuery = await db.collection('menuItems').where('userId', '==', userId).get();
+    const menuItems = menuItemsQuery.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Group items by department
+    const kitchenItems = [];
+    const barItems = [];
+    
+    for (const orderItem of order.items) {
+      const menuItem = menuItems.find(mi => mi.id === orderItem.id);
+      if (menuItem?.department === 'bar') {
+        barItems.push(orderItem);
+      } else {
+        kitchenItems.push(orderItem);
+      }
+    }
+    
+    // Send to kitchen if has kitchen items
+    if (kitchenItems.length > 0) {
+      await sendToDepartment(order, 'kitchen', kitchenItems, -1002660493020);
+    }
+    
+    // Send to bar if has bar items
+    if (barItems.length > 0) {
+      await sendToDepartment(order, 'bar', barItems, -1002859150516);
+    }
+  } catch (error) {
+    console.error('Error sending order to departments:', error);
+  }
+}
+
+async function sendToDepartment(order, department, departmentItems, chatId) {
+  const emoji = department === 'kitchen' ? '👨‍🍳' : '🍹';
+  const departmentName = department === 'kitchen' ? 'Kitchen' : 'Bar';
+
+  const orderItems = departmentItems
+    .map(item => `• ${item.name} x${item.quantity}`)
+    .join('\n');
+
+  const message = `
+${emoji} <b>${departmentName} Order - Table ${order.tableNumber}</b>
+
+${orderItems}
+
+🕐 <b>Time:</b> ${new Date(order.timestamp).toLocaleString()}
+📋 <b>Order ID:</b> ${order.id.slice(0, 8)}
+
+<b>Status: APPROVED - Start Preparation</b>
+  `.trim();
+
+  const buttons = [
+    [
+      { text: '✅ Ready', callback_data: `ready_${department}_${order.id}` },
+      { text: '⏰ Delay', callback_data: `delay_${department}_${order.id}` }
+    ]
+  ];
+
+  try {
+    await axios.post(`${TELEGRAM_API_URL}/sendMessage`, {
+      chat_id: chatId,
+      text: message,
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: buttons
+      }
+    });
+  } catch (error) {
+    console.error(`Error sending to ${department}:`, error);
   }
 }
