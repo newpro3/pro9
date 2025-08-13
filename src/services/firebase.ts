@@ -570,7 +570,10 @@ class FirebaseService {
   // =======================
   async updateUserProfile(userId: string, updates: Partial<User>): Promise<void> {
     try {
-      await updateDoc(doc(db, 'users', userId), updates);
+      await updateDoc(doc(db, 'users', userId), {
+        ...updates,
+        updated_at: new Date().toISOString(),
+      });
     } catch (error) {
       console.error('Error updating user profile:', error);
       throw error;

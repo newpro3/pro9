@@ -140,6 +140,7 @@ export interface User {
   phone?: string;
   address?: string;
   logo?: string;
+  numberOfTables?: number;
   created_at: string;
   subscription: 'free' | 'premium';
   settings: {

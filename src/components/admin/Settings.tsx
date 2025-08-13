@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Upload, User, Building, MessageSquare, Globe, Palette } from 'lucide-react';
+import { Save, Upload, User, Building, MessageSquare, Globe, Palette, QrCode, Download, Table } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { firebaseService } from '../../services/firebase';
 import { imgbbService } from '../../services/imgbb';
 import { telegramService } from '../../services/telegram';
 import { User as UserType } from '../../types';
+import { QRCodeGenerator } from '../QRCodeGenerator';
 
 export const Settings: React.FC = () => {
   const { user, firebaseUser } = useAuth();
@@ -13,6 +14,7 @@ export const Settings: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [webhookInfo, setWebhookInfo] = useState<any>(null);
   const [settingUpWebhook, setSettingUpWebhook] = useState(false);
+  const [showQRGenerator, setShowQRGenerator] = useState(false);
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -21,6 +23,7 @@ export const Settings: React.FC = () => {
     address: user?.address || '',
     telegramChatId: user?.telegramChatId || '',
     logo: user?.logo || '',
+    numberOfTables: user?.numberOfTables || 10,
     settings: {
       currency: user?.settings?.currency || 'USD',
       language: user?.settings?.language || 'en',
@@ -38,6 +41,7 @@ export const Settings: React.FC = () => {
         address: user.address || '',
         telegramChatId: user.telegramChatId || '',
         logo: user.logo || '',
+        numberOfTables: user.numberOfTables || 10,
         settings: {
           currency: user.settings?.currency || 'USD',
           language: user.settings?.language || 'en',
@@ -346,12 +350,49 @@ export const Settings: React.FC = () => {
         </div>
 
         {/* App Settings */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-white rounded-lg shadow-sm border p-6 space-y-6">
           <div className="flex items-center space-x-3 mb-6">
             <Palette className="w-5 h-5 text-gray-500" />
             <h2 className="text-lg font-semibold text-gray-900">App Settings</h2>
           </div>
 
+          {/* Table Management */}
+          <div className="border-t pt-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <Table className="w-5 h-5 text-gray-500" />
+              <h3 className="text-md font-semibold text-gray-900">Table Management</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Number of Tables
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={formData.numberOfTables}
+                  onChange={(e) => handleInputChange('numberOfTables', parseInt(e.target.value) || 1)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Set the total number of tables in your restaurant
+                </p>
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={() => setShowQRGenerator(true)}
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <QrCode className="w-4 h-4" />
+                  <span>Generate QR Codes</span>
+                </button>
+              </div>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -478,6 +519,16 @@ export const Settings: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* QR Code Generator Modal */}
+      {showQRGenerator && (
+        <QRCodeGenerator
+          userId={user?.id || ''}
+          businessName={user?.businessName || 'Restaurant'}
+          numberOfTables={formData.numberOfTables}
+          onClose={() => setShowQRGenerator(false)}
+        />
+      )}
     </div>
   );
 };
