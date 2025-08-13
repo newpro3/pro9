@@ -3,6 +3,7 @@ import { Save, Upload, User, Building, MessageSquare, Globe, Palette } from 'luc
 import { useAuth } from '../../hooks/useAuth';
 import { firebaseService } from '../../services/firebase';
 import { imgbbService } from '../../services/imgbb';
+import { telegramService } from '../../services/telegram';
 import { User as UserType } from '../../types';
 
 export const Settings: React.FC = () => {
@@ -10,6 +11,8 @@ export const Settings: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [webhookInfo, setWebhookInfo] = useState<any>(null);
+  const [settingUpWebhook, setSettingUpWebhook] = useState(false);
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -42,8 +45,20 @@ export const Settings: React.FC = () => {
           notifications: user.settings?.notifications ?? true,
         }
       });
+      
+      // Load webhook info
+      loadWebhookInfo();
     }
   }, [user]);
+
+  const loadWebhookInfo = async () => {
+    try {
+      const info = await telegramService.getWebhookInfo();
+      setWebhookInfo(info);
+    } catch (error) {
+      console.error('Error loading webhook info:', error);
+    }
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -109,6 +124,23 @@ export const Settings: React.FC = () => {
     }
   };
 
+  const setupTelegramWebhook = async () => {
+    setSettingUpWebhook(true);
+    try {
+      const success = await telegramService.setupWebhook();
+      if (success) {
+        alert('Telegram webhook set up successfully!');
+        await loadWebhookInfo();
+      } else {
+        alert('Failed to set up Telegram webhook. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error setting up webhook:', error);
+      alert('Failed to set up webhook. Please check your bot token.');
+    } finally {
+      setSettingUpWebhook(false);
+    }
+  };
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -236,6 +268,48 @@ export const Settings: React.FC = () => {
           </div>
 
           <div className="space-y-4">
+            {/* Webhook Status */}
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-medium text-blue-900 mb-2">Webhook Status</h3>
+              {webhookInfo ? (
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">URL:</span>
+                    <span className="text-blue-900 font-mono text-xs">
+                      {webhookInfo.result?.url || 'Not set'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Status:</span>
+                    <span className={`font-medium ${
+                      webhookInfo.result?.url ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {webhookInfo.result?.url ? 'Active' : 'Not configured'}
+                    </span>
+                  </div>
+                  {webhookInfo.result?.last_error_date && (
+                    <div className="flex justify-between">
+                      <span className="text-blue-700">Last Error:</span>
+                      <span className="text-red-600 text-xs">
+                        {new Date(webhookInfo.result.last_error_date * 1000).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-blue-700 text-sm">Loading webhook status...</p>
+              )}
+              
+              <button
+                type="button"
+                onClick={setupTelegramWebhook}
+                disabled={settingUpWebhook}
+                className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+              >
+                {settingUpWebhook ? 'Setting up...' : 'Setup Webhook'}
+              </button>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Telegram Chat ID
@@ -259,6 +333,14 @@ export const Settings: React.FC = () => {
               <p className="text-sm text-gray-500 mt-1">
                 Get your Chat ID by messaging @userinfobot on Telegram
               </p>
+              <div className="mt-2 p-3 bg-yellow-50 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <strong>Webhook URL:</strong> https://tel-alun.vercel.app/api/telegram-webhook
+                </p>
+                <p className="text-xs text-yellow-700 mt-1">
+                  This webhook handles order approvals and payment confirmations automatically.
+                </p>
+              </div>
             </div>
           </div>
         </div>

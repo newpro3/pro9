@@ -6,8 +6,34 @@ const ADMIN_CHAT_ID = -1002701066037;  // Admin notifications
 const KITCHEN_CHAT_ID = -1002660493020; // Kitchen orders
 const BAR_CHAT_ID = -1002859150516;     // Bar orders
 const TELEGRAM_API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
+const WEBHOOK_URL = 'https://tel-alun.vercel.app/api/telegram-webhook';
 
 class TelegramService {
+  async setupWebhook(): Promise<boolean> {
+    try {
+      const response = await axios.post(`${TELEGRAM_API_URL}/setWebhook`, {
+        url: WEBHOOK_URL,
+        allowed_updates: ['callback_query', 'message']
+      });
+      
+      console.log('Webhook setup result:', response.data);
+      return response.data.ok;
+    } catch (error) {
+      console.error('Error setting up webhook:', error);
+      return false;
+    }
+  }
+
+  async getWebhookInfo(): Promise<any> {
+    try {
+      const response = await axios.get(`${TELEGRAM_API_URL}/getWebhookInfo`);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting webhook info:', error);
+      return null;
+    }
+  }
+
   async sendMessage(message: string, chatId: number = ADMIN_CHAT_ID): Promise<boolean> {
     try {
       const response = await axios.post(`${TELEGRAM_API_URL}/sendMessage`, {

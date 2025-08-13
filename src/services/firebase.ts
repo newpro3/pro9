@@ -208,7 +208,8 @@ class FirebaseService {
       }
     } catch (error) {
       console.error('Error sending order to departments:', error);
-      throw error;
+      // Don't throw error to prevent order approval from failing
+      console.warn('Order approved but Telegram notification failed');
     }
   }
 

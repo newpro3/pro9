@@ -42,7 +42,7 @@ A comprehensive platform where restaurant owners can create and manage their own
 ### 2. Telegram Bot Setup
 1. Create a bot with @BotFather on Telegram
 2. Get your bot token
-3. Set up webhook URL: `https://your-domain.com/api/telegram-webhook`
+3. Set up webhook URL: `https://tel-alun.vercel.app/api/telegram-webhook`
 4. Configure chat IDs:
    - Admin chat: -1002701066037
    - Kitchen chat: -1002660493020
@@ -74,7 +74,8 @@ npm run dev
 1. Connect your GitHub repository to Vercel
 2. Add environment variables in Vercel dashboard
 3. Deploy automatically on push to main branch
-4. Set up Telegram webhook: `https://api.telegram.org/bot<BOT_TOKEN>/setWebhook?url=https://your-vercel-app.vercel.app/api/telegram-webhook`
+4. The Telegram webhook is automatically configured to: `https://tel-alun.vercel.app/api/telegram-webhook`
+5. You can also set it up manually: `https://api.telegram.org/bot<BOT_TOKEN>/setWebhook?url=https://tel-alun.vercel.app/api/telegram-webhook`
 
 ## Usage
 

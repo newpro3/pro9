@@ -8,6 +8,7 @@ const axios = require('axios');
 
 const BOT_TOKEN = '1941939105:AAHJ9XhL9uRyzQ9uhi3F4rKAQIbQ9D7YRs8';
 const TELEGRAM_API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
+const WEBHOOK_URL = 'https://tel-alun.vercel.app/api/telegram-webhook';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -59,6 +60,39 @@ export default async function handler(req, res) {
         }
       }
       
+      // Handle payment confirmation approval/rejection
+      else if (callbackData.startsWith('approve_payment_') || callbackData.startsWith('reject_payment_')) {
+        const confirmationId = callbackData.replace(/^(approve_payment_|reject_payment_)/, '');
+        const isApproval = callbackData.startsWith('approve_payment_');
+        
+        try {
+          const responseMessage = isApproval 
+            ? `✅ Payment ${confirmationId.slice(0, 8)} has been approved!`
+            : `❌ Payment ${confirmationId.slice(0, 8)} has been rejected.`;
+          
+          await axios.post(`${TELEGRAM_API_URL}/sendMessage`, {
+            chat_id: chatId,
+            text: responseMessage,
+            parse_mode: 'HTML'
+          });
+          
+          await axios.post(`${TELEGRAM_API_URL}/answerCallbackQuery`, {
+            callback_query_id: callback_query.id,
+            text: isApproval ? 'Payment approved!' : 'Payment rejected!',
+            show_alert: false
+          });
+          
+        } catch (error) {
+          console.error('Error processing payment:', error);
+          
+          await axios.post(`${TELEGRAM_API_URL}/answerCallbackQuery`, {
+            callback_query_id: callback_query.id,
+            text: 'Error processing payment. Please try again.',
+            show_alert: true
+          });
+        }
+      }
+      
       // Handle kitchen/bar ready/delay responses
       else if (callbackData.includes('ready_') || callbackData.includes('delay_')) {
         const [action, department, orderId] = callbackData.split('_');
@@ -88,5 +122,20 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Webhook error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+}
+// Function to set up the webhook URL
+export async function setupWebhook() {
+  try {
+    const response = await axios.post(`${TELEGRAM_API_URL}/setWebhook`, {
+      url: WEBHOOK_URL,
+      allowed_updates: ['callback_query', 'message']
+    });
+    
+    console.log('Webhook setup result:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error setting up webhook:', error);
+    throw error;
   }
 }
