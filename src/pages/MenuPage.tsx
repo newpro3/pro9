@@ -13,7 +13,7 @@ interface PaymentModalProps {
   onPaymentSubmit: (paymentData: { screenshotUrl: string; method: string }) => void | Promise<void>;
 }
 
-export const PaymentModal: React.FC<PaymentModalProps> = ({
+export const MenuPage: React.FC<PaymentModalProps> = ({
   items,
   totalAmount,
   tableNumber,
