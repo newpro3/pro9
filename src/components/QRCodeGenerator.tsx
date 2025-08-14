@@ -132,15 +132,31 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         const pageHeight = pdf.internal.pageSize.getHeight();
         
         // Add themed background
-        pdf.setFillColor(colors.background);
+        // Convert hex to RGB for PDF
+        const hexToRgb = (hex: string) => {
+          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+          return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+          } : { r: 255, g: 255, b: 255 };
+        };
+        
+        const bgColor = hexToRgb(colors.gradientStart);
+        const primaryColor = hexToRgb(colors.primary);
+        const textColor = hexToRgb(colors.text);
+        const secondaryColor = hexToRgb(colors.secondary);
+        const accentColor = hexToRgb(colors.accent);
+        
+        pdf.setFillColor(bgColor.r, bgColor.g, bgColor.b);
         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
         
         // Add title
-        pdf.setTextColor(colors.text);
+        pdf.setTextColor(textColor.r, textColor.g, textColor.b);
         pdf.setFontSize(20);
         pdf.text(businessName, pageWidth / 2, 30, { align: 'center' });
         
-        pdf.setTextColor(colors.primary);
+        pdf.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
         pdf.setFontSize(16);
         pdf.text(`Table ${tableNumber}`, pageWidth / 2, 50, { align: 'center' });
         
@@ -152,23 +168,23 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         pdf.addImage(qrDataURL, 'PNG', qrX, qrY, qrSize, qrSize);
         
         // Add themed border around QR code
-        pdf.setDrawColor(colors.primary);
+        pdf.setDrawColor(primaryColor.r, primaryColor.g, primaryColor.b);
         pdf.setLineWidth(2);
         pdf.rect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10);
         
         // Add URL
-        pdf.setTextColor(colors.text);
+        pdf.setTextColor(textColor.r, textColor.g, textColor.b);
         pdf.setFontSize(10);
         const url = `${window.location.origin}/menu/${userId}/table/${tableNumber}`;
         pdf.text(url, pageWidth / 2, qrY + qrSize + 20, { align: 'center' });
         
         // Add instructions
-        pdf.setTextColor(colors.secondary);
+        pdf.setTextColor(secondaryColor.r, secondaryColor.g, secondaryColor.b);
         pdf.setFontSize(12);
         pdf.text('Scan this QR code to view our menu', pageWidth / 2, qrY + qrSize + 35, { align: 'center' });
         
         // Add themed footer
-        pdf.setTextColor(colors.accent);
+        pdf.setTextColor(accentColor.r, accentColor.g, accentColor.b);
         pdf.setFontSize(8);
         pdf.text(`Generated with ${theme.charAt(0).toUpperCase() + theme.slice(1)} Theme`, pageWidth / 2, pageHeight - 10, { align: 'center' });
         
@@ -208,15 +224,21 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           }
           
           // Add themed background
-          pdf.setFillColor(colors.background);
+          const bgColor = hexToRgb(colors.gradientStart);
+          const primaryColor = hexToRgb(colors.primary);
+          const textColor = hexToRgb(colors.text);
+          const secondaryColor = hexToRgb(colors.secondary);
+          const accentColor = hexToRgb(colors.accent);
+          
+          pdf.setFillColor(bgColor.r, bgColor.g, bgColor.b);
           pdf.rect(0, 0, pageWidth, pageHeight, 'F');
           
           // Add title
-          pdf.setTextColor(colors.text);
+          pdf.setTextColor(textColor.r, textColor.g, textColor.b);
           pdf.setFontSize(20);
           pdf.text(businessName, pageWidth / 2, 30, { align: 'center' });
           
-          pdf.setTextColor(colors.primary);
+          pdf.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
           pdf.setFontSize(16);
           pdf.text(`Table ${tableNumber}`, pageWidth / 2, 50, { align: 'center' });
           
@@ -229,23 +251,23 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           pdf.addImage(qrDataURL, 'PNG', qrX, qrY, qrSize, qrSize);
           
           // Add themed border around QR code
-          pdf.setDrawColor(colors.primary);
+          pdf.setDrawColor(primaryColor.r, primaryColor.g, primaryColor.b);
           pdf.setLineWidth(2);
           pdf.rect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10);
           
           // Add URL
-          pdf.setTextColor(colors.text);
+          pdf.setTextColor(textColor.r, textColor.g, textColor.b);
           pdf.setFontSize(10);
           const url = `${window.location.origin}/menu/${userId}/table/${tableNumber}`;
           pdf.text(url, pageWidth / 2, qrY + qrSize + 20, { align: 'center' });
           
           // Add instructions
-          pdf.setTextColor(colors.secondary);
+          pdf.setTextColor(secondaryColor.r, secondaryColor.g, secondaryColor.b);
           pdf.setFontSize(12);
           pdf.text('Scan this QR code to view our menu', pageWidth / 2, qrY + qrSize + 35, { align: 'center' });
           
           // Add themed footer
-          pdf.setTextColor(colors.accent);
+          pdf.setTextColor(accentColor.r, accentColor.g, accentColor.b);
           pdf.setFontSize(8);
           pdf.text(`Generated with ${theme.charAt(0).toUpperCase() + theme.slice(1)} Theme`, pageWidth / 2, pageHeight - 10, { align: 'center' });
         }

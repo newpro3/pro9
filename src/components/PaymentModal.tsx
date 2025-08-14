@@ -55,9 +55,18 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-md max-h-[90vh] rounded-2xl overflow-hidden animate-slide-up shadow-xl flex flex-col">
+      <div 
+        className="w-full max-w-md max-h-[90vh] rounded-2xl overflow-hidden animate-slide-up shadow-xl flex flex-col"
+        style={{ 
+          backgroundColor: colors.cardBackground,
+          border: `1px solid ${colors.cardBorder}`
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div 
+          className="flex items-center justify-between p-4 border-b"
+          style={{ borderColor: colors.border }}
+        >
           <h2 className="text-lg font-bold text-gray-900">Payment Confirmation</h2>
           <button
             onClick={onClose}
@@ -70,7 +79,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
         <div className="p-4 space-y-5 overflow-y-auto">
           {/* Order Summary */}
-          <div className="bg-gray-50 p-3 rounded-lg text-sm">
+          <div 
+            className="p-3 rounded-lg text-sm border"
+            style={{ 
+              backgroundColor: colors.surface,
+              border: `1px solid ${colors.border}`
+            }}
+          >
             <h3 className="font-semibold text-gray-900 mb-2">Order Summary - Table {tableNumber}</h3>
             <div className="space-y-1 max-h-40 overflow-y-auto">
               {items.map((item) => (
@@ -158,7 +173,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           </div>
 
           {/* Payment Instructions */}
-          <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
+          <div 
+            className="p-3 rounded-lg text-sm border"
+            style={{ 
+              backgroundColor: `${colors.primary}20`,
+              border: `1px solid ${colors.primary}40`,
+              color: colors.text
+            }}
+          >
             <h4 className="font-semibold text-blue-900 mb-1">Payment Instructions:</h4>
             {paymentMethod === 'bank_transfer' ? (
               <div className="space-y-1">
@@ -179,11 +201,21 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         </div>
 
         {/* Submit Button */}
-        <div className="p-4 border-t bg-gray-50">
+        <div 
+          className="p-4 border-t"
+          style={{ 
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.border
+          }}
+        >
           <button
             onClick={handleSubmit}
             disabled={!selectedFile || isSubmitting}
-            className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl font-semibold transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            style={{ 
+              backgroundColor: !selectedFile || isSubmitting ? '#d1d5db' : colors.primary,
+              color: colors.buttonText
+            }}
           >
             {isSubmitting ? (
               <>

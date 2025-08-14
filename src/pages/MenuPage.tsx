@@ -1,391 +1,265 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
-import { MenuItem, TableBill } from '../types';
-import { MenuCard } from '../components/MenuCard';
-import { MenuDetail } from '../components/MenuDetail';
-import { CartModal } from '../components/CartModal';
-import { BillModal } from '../components/BillModal';
-import { BottomNav } from '../components/BottomNav';
-import { CategoryFilter } from '../components/CategoryFilter';
-import { TableHeader } from '../components/TableHeader';
-import { SettingsModal } from '../components/SettingsModal';
-import { FeedbackModal } from '../components/FeedbackModal';
-import { PaymentModal } from '../components/PaymentModal';
-import { useCart } from '../hooks/useCart';
-import { useSettings } from '../hooks/useSettings';
-import { firebaseService } from '../services/firebase';
-import { telegramService } from '../services/telegram';
-import { AnalyticsService } from '../services/analytics';
-import { useTranslation } from '../utils/translations';
-import { useMenuTheme } from '../hooks/useMenuTheme';
+import React, { useState, useRef } from 'react';
+import { X, Upload, Camera, Check, Banknote, Smartphone } from 'lucide-react';
+import { OrderItem } from '../types';
+import { MenuTheme, ThemeColors } from '../hooks/useMenuTheme';
 
-export const MenuPage: React.FC = () => {
-  const { userId, tableNumber } = useParams<{ userId: string; tableNumber: string }>();
-  const { theme, loading: themeLoading } = useMenuTheme(userId);
-  const { settings, updateSettings } = useSettings();
-  const {
-    items: cartItems,
-    addItem,
-    removeItem,
-    updateQuantity,
-    clearCart,
-    getTotalAmount,
-    getTotalItems,
-  } = useCart();
+interface PaymentModalProps {
+  items: OrderItem[];
+  totalAmount: number;
+  tableNumber: string;
+  theme: MenuTheme;
+  colors: ThemeColors;
+  onClose: () => void;
+  onPaymentSubmit: (paymentData: { screenshotUrl: string; method: string }) => void | Promise<void>;
+}
 
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [userExists, setUserExists] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [showCart, setShowCart] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
-  const [showBill, setShowBill] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('home');
-  const [tableBill, setTableBill] = useState<TableBill | null>(null);
-  const [isPayingBill, setIsPayingBill] = useState(false);
-  const [analytics] = useState(() => new AnalyticsService(tableNumber || '1'));
-  const t = useTranslation(settings.language);
+export const PaymentModal: React.FC<PaymentModalProps> = ({
+  items,
+  totalAmount,
+  tableNumber,
+  theme,
+  colors,
+  onClose,
+  onPaymentSubmit,
+}) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'mobile_money'>('bank_transfer');
+  const [preview, setPreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (userId) {
-      loadMenuItems();
-      loadTableBill();
+  const getModalStyles = () => {
+    switch (theme) {
+      case 'modern':
+        return {
+          modal: 'bg-white rounded-3xl shadow-2xl',
+          button: 'rounded-xl font-semibold'
+        };
+      case 'elegant':
+        return {
+          modal: 'bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-xl border border-amber-100',
+          button: 'rounded-lg font-serif font-semibold'
+        };
+      case 'minimal':
+        return {
+          modal: 'bg-white rounded-lg shadow-lg border',
+          button: 'rounded font-medium'
+        };
+      default:
+        return {
+          modal: 'bg-white rounded-2xl shadow-xl',
+          button: 'rounded-lg font-semibold'
+        };
     }
-  }, [userId]);
+  };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (userId) {
-        loadTableBill();
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [userId]);
+  const styles = getModalStyles();
 
-  const loadMenuItems = async () => {
-    if (!userId) return;
-    
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedFile) return;
+    setIsSubmitting(true);
     try {
-      setLoading(true);
-      const items = await firebaseService.getMenuItems(userId);
-      setMenuItems(items);
-      setUserExists(items.length > 0);
+      // Upload screenshot to ImgBB
+      const { imgbbService } = await import('../services/imgbb');
+      const screenshotUrl = await imgbbService.uploadImage(selectedFile, `payment_${Date.now()}`);
+
+      await onPaymentSubmit({ screenshotUrl, method: paymentMethod });
+      onClose();
     } catch (error) {
-      console.error('Error loading menu items:', error);
-      setUserExists(false);
+      console.error('Error submitting payment:', error);
+      alert('Failed to submit payment. Please try again.');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const loadTableBill = async () => {
-    if (!userId || !tableNumber) return;
-    try {
-      const bill = await firebaseService.getTableBill(userId, tableNumber);
-      setTableBill(bill);
-    } catch (error) {
-      console.error('Error loading table bill:', error);
-    }
-  };
-
-  const handleItemClick = (item: MenuItem) => {
-    analytics.trackItemView(item.id);
-    firebaseService.updateMenuItem(item.id, { views: item.views + 1 });
-    setSelectedItem(item);
-  };
-
-  const handleAddToCart = (item: MenuItem, quantity: number) => {
-    for (let i = 0; i < quantity; i++) {
-      addItem({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-      });
-    }
-  };
-
-  const handlePlaceOrder = async () => {
-    if (cartItems.length === 0) return;
-
-    const pendingOrderData = {
-      tableNumber: tableNumber || '1',
-      userId: userId || '',
-      items: cartItems,
-      totalAmount: getTotalAmount(),
-      timestamp: new Date().toISOString(),
-    };
-
-    analytics.trackOrder({ 
-      id: 'temp', 
-      ...pendingOrderData, 
-      status: 'pending_approval',
-      paymentStatus: 'pending'
-    });
-    
-    try {
-      const pendingOrderId = await firebaseService.addPendingOrder(pendingOrderData);
-      setLastOrderId(pendingOrderId);
-      
-      // Send pending order with approve/reject buttons
-      await telegramService.sendPendingOrderWithButtons({ 
-        id: pendingOrderId, 
-        ...pendingOrderData
-      });
-      
-      clearCart();
-      setShowCart(false);
-      setTimeout(() => setShowFeedback(true), 2000);
-      alert('Order submitted for approval! You will be notified once approved.');
-    } catch (error) {
-      console.error('Error placing order:', error);
-      alert('Failed to place order. Please try again.');
-    }
-  };
-
-  const handlePaymentOrder = () => {
-    if (cartItems.length === 0) return;
-    setShowCart(false);
-    setShowPayment(true);
-  };
-
-  const handlePaymentSubmit = async (paymentData: { screenshot: File; method: string; screenshotUrl: string }) => {
-    if (isPayingBill) {
-      if (!tableBill) return;
-      
-      try {
-        // Create payment confirmation record
-        const paymentConfirmation = {
-          tableNumber: tableBill.tableNumber,
-          userId: userId || '',
-          items: tableBill.items,
-          subtotal: tableBill.subtotal,
-          tax: tableBill.tax,
-          total: tableBill.total,
-          method: paymentData.method === 'bank_transfer' ? 'bank_transfer' : 'mobile_money',
-          screenshotUrl: paymentData.screenshotUrl,
-          timestamp: new Date().toISOString(),
-          status: 'pending' as const
-        };
-
-        const confirmationId = await firebaseService.addPaymentConfirmation(paymentConfirmation);
-        
-        // Send to Telegram with approve/reject buttons
-        await telegramService.sendPaymentConfirmationWithButtons(
-          confirmationId,
-          tableBill.tableNumber,
-          tableBill.total,
-          paymentData.method
-        );
-        
-        setShowPayment(false);
-        setTimeout(() => setShowFeedback(true), 2000);
-        alert('Payment confirmation submitted! Please wait for admin approval.');
-      } catch (error) {
-        console.error('Error submitting payment:', error);
-        alert('Failed to submit payment confirmation. Please try again.');
-      } finally {
-        setIsPayingBill(false);
-      }
-    } else {
-      if (cartItems.length === 0) return;
-      
-      try {
-        const pendingOrderData = {
-          tableNumber: tableNumber || '1',
-          userId: userId || '',
-          items: cartItems,
-          totalAmount: getTotalAmount(),
-          paymentMethod: paymentData.method === 'bank_transfer' ? 'bank_transfer' : 'mobile',
-        };
-
-        const pendingOrderId = await firebaseService.addPendingOrder(pendingOrderData);
-        setLastOrderId(pendingOrderId);
-        
-        // Create payment confirmation for new order
-        const paymentConfirmation = {
-          tableNumber: tableNumber || '1',
-          userId: userId || '',
-          items: cartItems,
-          subtotal: getTotalAmount(),
-          tax: getTotalAmount() * 0.15,
-          total: getTotalAmount() * 1.15,
-          method: paymentData.method === 'bank_transfer' ? 'bank_transfer' : 'mobile_money',
-          screenshotUrl: paymentData.screenshotUrl,
-          timestamp: new Date().toISOString(),
-          status: 'pending' as const,
-          orderId: pendingOrderId
-        };
-
-        const confirmationId = await firebaseService.addPaymentConfirmation(paymentConfirmation);
-        
-        // Send to Telegram with approve/reject buttons
-        await telegramService.sendPaymentConfirmationWithButtons(
-          confirmationId,
-          tableNumber || '1',
-          getTotalAmount() * 1.15,
-          paymentData.method
-        );
-        
-        clearCart();
-        setShowPayment(false);
-        setTimeout(() => setShowFeedback(true), 2000);
-        alert('Payment confirmation submitted! Your order is pending approval.');
-      } catch (error) {
-        console.error('Error submitting payment:', error);
-        alert('Failed to submit payment confirmation. Please try again.');
-      }
-    }
-  };
-
-  const handleWaiterCall = async () => {
-    analytics.trackWaiterCall();
-    try {
-      await telegramService.sendWaiterCall(tableNumber || '1');
-      alert(t('waiterCalled'));
-    } catch (error) {
-      console.error('Error calling waiter:', error);
-      alert('Waiter call registered! (Note: Telegram notification may have failed)');
-    }
-  };
-
-  const handleBillClick = () => {
-    setShowBill(true);
-  };
-
-  const handleFeedbackSubmit = (feedback: any) => {
-    const feedbacks = JSON.parse(localStorage.getItem('feedbacks') || '[]');
-    feedbacks.push(feedback);
-    localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
-    alert(t('thankYou'));
-  };
-
-  if (userExists === false) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">{themeLoading ? 'Loading theme...' : 'Loading menu...'}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const categories = Array.from(new Set(menuItems.map(item => item.category)));
-  const filteredItems = activeCategory === 'all' 
-    ? menuItems 
-    : menuItems.filter(item => item.category === activeCategory);
+  const triggerFileInput = () => fileInputRef.current?.click();
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <TableHeader 
-        tableNumber={tableNumber || '1'} 
-        language={settings.language}
-        orderType={settings.orderType}
-      />
-      
-      <CategoryFilter
-        categories={categories}
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
-      />
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className={`${styles.modal} w-full max-w-md max-h-[90vh] overflow-hidden animate-slide-up flex flex-col`}>
+        {/* Header */}
+        <div 
+          className="flex items-center justify-between p-4 border-b"
+          style={{ borderColor: colors.border }}
+        >
+          <h2 className="text-lg font-bold" style={{ color: colors.text }}>
+            Payment Confirmation
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Close payment modal"
+          >
+            <X className="w-5 h-5" style={{ color: colors.text }} />
+          </button>
+        </div>
 
-      <div className="p-4 pb-6">
-        <div className="grid grid-cols-2 gap-4">
-          {filteredItems.map((item) => (
-            <MenuCard
-              key={item.id}
-              item={item}
-              theme={theme}
-              onClick={() => handleItemClick(item)}
-            />
+        <div className="p-4 space-y-5 overflow-y-auto">
+          {/* Order Summary */}
+          <div 
+            className="p-3 rounded-lg text-sm"
+            style={{ backgroundColor: colors.surface }}
+          >
+            <h3 className="font-semibold mb-2" style={{ color: colors.text }}>
+              Order Summary - Table {tableNumber}
+            </h3>
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {items.map((item) => (
+                <div 
+                  key={`${item.id}-${item.quantity}`} 
+                  className="flex justify-between"
+                  style={{ color: colors.textSecondary }}
+                >
+                  <span>{item.name} × {item.quantity}</span>
+                  <span>${item.total.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+            <div 
+              className="border-t mt-3 pt-2 flex justify-between font-bold"
+              style={{ borderColor: colors.border }}
+            >
+              <span>Total:</span>
+              <span style={{ color: colors.primary }}>
+                ${totalAmount.toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          {/* Payment Method */}
+          <div>
+            <h3 className="font-semibold mb-2" style={{ color: colors.text }}>
+              Payment Method
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                border: `1px solid ${colors.cardBorder}`
+              }}
+            >
+              {category}
+            </button>
           ))}
         </div>
       </div>
+                onClick={() => setPaymentMethod('bank_transfer')}
+                className={`p-3 text-sm rounded-lg border-2 transition-colors flex items-center justify-center gap-2 ${
+                  paymentMethod === 'bank_transfer'
+                    ? 'border-green-600 bg-green-50 text-green-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <Banknote className="w-4 h-4" />
+                Bank Transfer
+              </button>
+              <button
+                onClick={() => setPaymentMethod('mobile_money')}
+                className={`p-3 text-sm rounded-lg border-2 transition-colors flex items-center justify-center gap-2 ${
+                  paymentMethod === 'mobile_money'
+                    ? 'border-green-600 bg-green-50 text-green-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <Smartphone className="w-4 h-4" />
+                Mobile Money
+              </button>
+            </div>
+          </div>
 
-      {selectedItem && (
-        <MenuDetail
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-          onAddToCart={handleAddToCart}
-        />
-      )}
+          {/* Screenshot Upload */}
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">Upload Payment Proof</h3>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+              aria-label="Payment proof upload"
+            />
 
-      {showCart && (
-        <CartModal
-          items={cartItems}
-          totalAmount={getTotalAmount()}
-          tableNumber={tableNumber || '1'}
-          onClose={() => setShowCart(false)}
-          onUpdateQuantity={updateQuantity}
-          onRemoveItem={removeItem}
-          onPlaceOrder={handlePlaceOrder}
-          onPaymentOrder={handlePaymentOrder}
-        />
-      )}
+            {!preview ? (
+              <div
+                onClick={triggerFileInput}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors"
+              >
+                <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600 text-sm">Click to upload payment proof</p>
+                <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+              </div>
+            ) : (
+              <div className="relative group">
+                <img
+                  src={preview}
+                  alt="Payment proof screenshot"
+                  className="w-full h-40 object-contain rounded-lg border bg-gray-50"
+                />
+                <div className="absolute top-2 right-2 bg-green-600 text-white p-1 rounded-full">
+                  <Check className="w-4 h-4" />
+                </div>
+                <button
+                  onClick={triggerFileInput}
+                  className="absolute bottom-2 right-2 bg-white bg-opacity-90 hover:bg-opacity-100 p-2 rounded-lg transition-all shadow-sm"
+                  aria-label="Change payment proof"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
 
-      {showPayment && (
-        <PaymentModal
-          items={isPayingBill ? (tableBill?.items || []) : cartItems}
-          totalAmount={isPayingBill ? (tableBill?.total || 0) : getTotalAmount()}
-          tableNumber={tableNumber || '1'}
-          onClose={() => {
-            setShowPayment(false);
-            setIsPayingBill(false);
-          }}
-          onPaymentSubmit={handlePaymentSubmit}
-        />
-      )}
+          {/* Payment Instructions */}
+          <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
+            <h4 className="font-semibold text-blue-900 mb-1">Payment Instructions:</h4>
+            {paymentMethod === 'bank_transfer' ? (
+              <div className="space-y-1">
+                <p><span className="inline-block min-w-[6em]">Account:</span> 123-456-789 (Example Bank)</p>
+                <p><span className="inline-block min-w-[6em]">Reference:</span> Table {tableNumber}</p>
+                <p><span className="inline-block min-w-[6em]">Amount:</span> ${totalAmount.toFixed(2)}</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <p><span className="inline-block min-w-[6em]">Number:</span> +251-912-345-678</p>
+                <p><span className="inline-block min-w-[6em]">Service:</span> Telebirr / M-Birr</p>
+                <p><span className="inline-block min-w-[6em]">Reference:</span> Table {tableNumber}</p>
+                <p><span className="inline-block min-w-[6em]">Amount:</span> ${totalAmount.toFixed(2)}</p>
+              </div>
+            )}
+            <p className="mt-2 text-blue-700 font-medium">• Upload proof after payment</p>
+          </div>
+        </div>
 
-      {showBill && (
-        <BillModal
-          tableBill={tableBill}
-          tableNumber={tableNumber || '1'}
-          businessName="Restaurant"
-          onClose={() => setShowBill(false)}
-          onPaymentOrder={() => {
-            setIsPayingBill(true);
-            setShowBill(false);
-            setShowPayment(true);
-          }}
-        />
-      )}
-
-      {showSettings && (
-        <SettingsModal
-          settings={settings}
-          onClose={() => setShowSettings(false)}
-          onUpdateSettings={updateSettings}
-        />
-      )}
-
-      {showFeedback && lastOrderId && (
-        <FeedbackModal
-          orderId={lastOrderId}
-          tableNumber={tableNumber || '1'}
-          language={settings.language}
-          onClose={() => setShowFeedback(false)}
-          onSubmit={handleFeedbackSubmit}
-        />
-      )}
-
-      <BottomNav
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onWaiterCall={handleWaiterCall}
-        onBillClick={handleBillClick}
-        onCartClick={() => setShowCart(true)}
-        onSettingsClick={() => setShowSettings(true)}
-        cartItemCount={getTotalItems()}
-        language={settings.language}
-      />
+        {/* Submit Button */}
+        <div className="p-4 border-t bg-gray-50">
+          <button
+            onClick={handleSubmit}
+            disabled={!selectedFile || isSubmitting}
+            className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Processing...
+              </>
+            ) : (
+              'Confirm Payment'
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

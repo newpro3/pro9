@@ -18,7 +18,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-2xl p-6 m-4 max-w-sm w-full">
+      <div 
+        className="rounded-2xl p-6 m-4 max-w-sm w-full"
+        style={{ 
+          backgroundColor: colors.cardBackground,
+          border: `1px solid ${colors.cardBorder}`
+        }}
+      >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">{t('settings')}</h2>
           <button
@@ -38,21 +44,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex space-x-2">
               <button
                 onClick={() => onUpdateSettings({ language: 'en' })}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors border ${
                   settings.language === 'en'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'text-white'
+                    : 'hover:bg-opacity-80'
                 }`}
+                style={settings.language === 'en' ? {
+                  backgroundColor: colors.primary,
+                  borderColor: colors.primary
+                } : {
+                  backgroundColor: colors.surface,
+                  color: colors.text,
+                  borderColor: colors.border
+                }}
               >
                 English
               </button>
               <button
                 onClick={() => onUpdateSettings({ language: 'am' })}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors border ${
                   settings.language === 'am'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'text-white'
+                    : 'hover:bg-opacity-80'
                 }`}
+                style={settings.language === 'am' ? {
+                  backgroundColor: colors.primary,
+                  borderColor: colors.primary
+                } : {
+                  backgroundColor: colors.surface,
+                  color: colors.text,
+                  borderColor: colors.border
+                }}
               >
                 አማርኛ
               </button>
@@ -67,21 +89,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex space-x-2">
               <button
                 onClick={() => onUpdateSettings({ orderType: 'dine-in' })}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors border ${
                   settings.orderType === 'dine-in'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'text-white'
+                    : 'hover:bg-opacity-80'
                 }`}
+                style={settings.orderType === 'dine-in' ? {
+                  backgroundColor: colors.primary,
+                  borderColor: colors.primary
+                } : {
+                  backgroundColor: colors.surface,
+                  color: colors.text,
+                  borderColor: colors.border
+                }}
               >
                 {t('dineIn')}
               </button>
               <button
                 onClick={() => onUpdateSettings({ orderType: 'takeaway' })}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors border ${
                   settings.orderType === 'takeaway'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'text-white'
+                    : 'hover:bg-opacity-80'
                 }`}
+                style={settings.orderType === 'takeaway' ? {
+                  backgroundColor: colors.primary,
+                  borderColor: colors.primary
+                } : {
+                  backgroundColor: colors.surface,
+                  color: colors.text,
+                  borderColor: colors.border
+                }}
               >
                 {t('takeaway')}
               </button>

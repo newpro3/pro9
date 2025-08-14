@@ -39,7 +39,13 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-2xl p-6 m-4 max-w-sm w-full">
+      <div 
+        className="rounded-2xl p-6 m-4 max-w-sm w-full"
+        style={{ 
+          backgroundColor: colors.cardBackground,
+          border: `1px solid ${colors.cardBorder}`
+        }}
+      >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">{t('feedback')}</h2>
           <button
@@ -90,7 +96,11 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
           <button
             onClick={handleSubmit}
             disabled={rating === 0}
-            className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-xl font-semibold transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            style={{ 
+              backgroundColor: rating === 0 ? '#d1d5db' : colors.primary,
+              color: colors.buttonText
+            }}
           >
             {t('submit')}
           </button>
