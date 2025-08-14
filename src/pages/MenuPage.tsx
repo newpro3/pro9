@@ -144,14 +144,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             </h3>
             <div className="grid grid-cols-2 gap-2">
               <button
-                border: `1px solid ${colors.cardBorder}`
-              }}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      </div>
                 onClick={() => setPaymentMethod('bank_transfer')}
                 className={`p-3 text-sm rounded-lg border-2 transition-colors flex items-center justify-center gap-2 ${
                   paymentMethod === 'bank_transfer'
