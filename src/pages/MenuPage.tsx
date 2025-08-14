@@ -255,4 +255,3 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     </div>
   );
 };
-{"code":"rate-limited","message":"You have hit the rate limit. Please upgrade to keep chatting.","providerLimitHit":false,"isRetryable":true}
