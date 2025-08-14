@@ -1,14 +1,13 @@
 import React, { useState, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { X, Upload, Camera, Check, Banknote, Smartphone } from 'lucide-react';
 import { OrderItem } from '../types';
-import { MenuTheme, ThemeColors } from '../hooks/useMenuTheme';
+import { useMenuTheme } from '../hooks/useMenuTheme';
 
 interface PaymentModalProps {
   items: OrderItem[];
   totalAmount: number;
   tableNumber: string;
-  theme: MenuTheme;
-  colors: ThemeColors;
   onClose: () => void;
   onPaymentSubmit: (paymentData: { screenshotUrl: string; method: string }) => void | Promise<void>;
 }
@@ -17,16 +16,27 @@ export const MenuPage: React.FC<PaymentModalProps> = ({
   items,
   totalAmount,
   tableNumber,
-  theme,
-  colors,
   onClose,
   onPaymentSubmit,
 }) => {
+  const { userId } = useParams<{ userId: string }>();
+  const { theme, colors, loading: themeLoading } = useMenuTheme(userId || '');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'mobile_money'>('bank_transfer');
   const [preview, setPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  if (themeLoading || !colors) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const getModalStyles = () => {
     switch (theme) {
