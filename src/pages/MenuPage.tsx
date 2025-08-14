@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMenuTheme } from '../hooks/useMenuTheme';
 import { useCart } from '../hooks/useCart';
+import { useSettings } from '../hooks/useSettings';
 import { TableHeader } from '../components/TableHeader';
 import { CategoryFilter } from '../components/CategoryFilter';
 import { MenuCard } from '../components/MenuCard';
@@ -17,12 +18,14 @@ import { MenuItem } from '../types';
 export const MenuPage: React.FC = () => {
   const { userId, tableNumber } = useParams<{ userId: string; tableNumber: string }>();
   const { theme, colors, loading: themeLoading } = useMenuTheme(userId || '');
+  const { settings } = useSettings();
   const { items: cartItems, addItem, updateQuantity, removeItem, clearCart, getTotalAmount } = useCart();
   
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>('menu');
   
   // Modal states
   const [showCart, setShowCart] = useState(false);
@@ -72,14 +75,17 @@ export const MenuPage: React.FC = () => {
     clearCart();
   };
 
+  const handleWaiterCall = () => {
+    // TODO: Implement waiter call functionality
+    console.log('Waiter called for table:', tableNumber);
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
       <TableHeader 
         tableNumber={tableNumber || ''}
-        cartItemCount={cartItems.length}
-        onCartClick={() => setShowCart(true)}
-        onSettingsClick={() => setShowSettings(true)}
-        colors={colors}
+        language={settings?.language || 'en'}
+        orderType={settings?.orderType || 'dine-in'}
       />
 
       <div className="px-4 py-6">
@@ -111,9 +117,15 @@ export const MenuPage: React.FC = () => {
 
       <BottomNav
         cartItemCount={cartItems.length}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
         onCartClick={() => setShowCart(true)}
         onBillClick={() => setShowBill(true)}
         onFeedbackClick={() => setShowFeedback(true)}
+        onWaiterCall={handleWaiterCall}
+        onSettingsClick={() => setShowSettings(true)}
+        language={settings?.language || 'en'}
+        theme={theme}
         colors={colors}
       />
 
