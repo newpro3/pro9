@@ -532,6 +532,7 @@ export const Settings: React.FC = () => {
         <QRCodeGenerator
           userId={user?.id || ''}
           businessName={user?.businessName || 'Restaurant'}
+          businessLogo={user?.logo}
           numberOfTables={formData.numberOfTables}
           onClose={() => setShowQRGenerator(false)}
         />

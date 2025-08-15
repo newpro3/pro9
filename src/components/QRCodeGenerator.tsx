@@ -8,6 +8,7 @@ import { useMenuTheme } from '../hooks/useMenuTheme';
 interface QRCodeGeneratorProps {
   userId: string;
   businessName: string;
+  businessLogo?: string;
   numberOfTables: number;
   onClose: () => void;
 }
@@ -15,6 +16,7 @@ interface QRCodeGeneratorProps {
 export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
   userId,
   businessName,
+  businessLogo,
   numberOfTables,
   onClose,
 }) => {
@@ -116,6 +118,15 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     }
   };
 
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 255, g: 255, b: 255 };
+  };
+
   const downloadSingleQR = async (tableNumber: number, format: 'png' | 'pdf') => {
     try {
       const qrDataURL = qrCodes[tableNumber] || await generateQRCode(tableNumber);
@@ -132,17 +143,7 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         const pageHeight = pdf.internal.pageSize.getHeight();
         
         // Add themed background
-        // Convert hex to RGB for PDF
-        const hexToRgb = (hex: string) => {
-          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-          return result ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16)
-          } : { r: 255, g: 255, b: 255 };
-        };
-        
-        const bgColor = hexToRgb(colors.gradientStart);
+        const bgColor = hexToRgb(colors.background);
         const primaryColor = hexToRgb(colors.primary);
         const textColor = hexToRgb(colors.text);
         const secondaryColor = hexToRgb(colors.secondary);
@@ -151,19 +152,32 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         pdf.setFillColor(bgColor.r, bgColor.g, bgColor.b);
         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
         
+        // Add business logo if available
+        if (businessLogo) {
+          try {
+            const logoSize = 30;
+            const logoX = (pageWidth - logoSize) / 2;
+            const logoY = 15;
+            pdf.addImage(businessLogo, 'PNG', logoX, logoY, logoSize, logoSize);
+          } catch (error) {
+            console.warn('Could not add logo to PDF:', error);
+          }
+        }
+        
         // Add title
         pdf.setTextColor(textColor.r, textColor.g, textColor.b);
         pdf.setFontSize(20);
-        pdf.text(businessName, pageWidth / 2, 30, { align: 'center' });
+        const titleY = businessLogo ? 55 : 30;
+        pdf.text(businessName, pageWidth / 2, titleY, { align: 'center' });
         
         pdf.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
         pdf.setFontSize(16);
-        pdf.text(`Table ${tableNumber}`, pageWidth / 2, 50, { align: 'center' });
+        pdf.text(`Table ${tableNumber}`, pageWidth / 2, titleY + 20, { align: 'center' });
         
         // Add QR code
         const qrSize = 120;
         const qrX = (pageWidth - qrSize) / 2;
-        const qrY = 70;
+        const qrY = titleY + 40;
         
         pdf.addImage(qrDataURL, 'PNG', qrX, qrY, qrSize, qrSize);
         
@@ -224,7 +238,7 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           }
           
           // Add themed background
-          const bgColor = hexToRgb(colors.gradientStart);
+          const bgColor = hexToRgb(colors.background);
           const primaryColor = hexToRgb(colors.primary);
           const textColor = hexToRgb(colors.text);
           const secondaryColor = hexToRgb(colors.secondary);
@@ -233,20 +247,33 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           pdf.setFillColor(bgColor.r, bgColor.g, bgColor.b);
           pdf.rect(0, 0, pageWidth, pageHeight, 'F');
           
+          // Add business logo if available
+          if (businessLogo) {
+            try {
+              const logoSize = 30;
+              const logoX = (pageWidth - logoSize) / 2;
+              const logoY = 15;
+              pdf.addImage(businessLogo, 'PNG', logoX, logoY, logoSize, logoSize);
+            } catch (error) {
+              console.warn('Could not add logo to PDF:', error);
+            }
+          }
+          
           // Add title
           pdf.setTextColor(textColor.r, textColor.g, textColor.b);
           pdf.setFontSize(20);
-          pdf.text(businessName, pageWidth / 2, 30, { align: 'center' });
+          const titleY = businessLogo ? 55 : 30;
+          pdf.text(businessName, pageWidth / 2, titleY, { align: 'center' });
           
           pdf.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
           pdf.setFontSize(16);
-          pdf.text(`Table ${tableNumber}`, pageWidth / 2, 50, { align: 'center' });
+          pdf.text(`Table ${tableNumber}`, pageWidth / 2, titleY + 20, { align: 'center' });
           
           // Add QR code
           const qrDataURL = qrCodes[tableNumber] || await generateQRCode(tableNumber);
           const qrSize = 120;
           const qrX = (pageWidth - qrSize) / 2;
-          const qrY = 70;
+          const qrY = titleY + 40;
           
           pdf.addImage(qrDataURL, 'PNG', qrX, qrY, qrSize, qrSize);
           

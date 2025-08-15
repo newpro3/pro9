@@ -14,20 +14,20 @@ import { FeedbackModal } from '../components/FeedbackModal';
 import { BottomNav } from '../components/BottomNav';
 import { MenuItem, User } from '../types';
 import { firebaseService } from '../services/firebase';
-import { Utensils, MapPin, Clock } from 'lucide-react';
+import { Utensils, MapPin, Clock, Star, Flame, ChefHat } from 'lucide-react';
 
 export const MenuPage: React.FC = () => {
   const { userId, tableNumber } = useParams<{ userId: string; tableNumber: string }>();
   const { theme, colors, loading: themeLoading } = useMenuTheme(userId || '');
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const { items: cartItems, addItem, updateQuantity, removeItem, clearCart, getTotalAmount } = useCart();
   
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [businessInfo, setBusinessInfo] = useState<User | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>('menu');
+  const [activeTab, setActiveTab] = useState<string>('home');
   
   // Modal states
   const [showCart, setShowCart] = useState(false);
@@ -86,9 +86,21 @@ export const MenuPage: React.FC = () => {
     );
   }
 
-  const filteredItems = selectedCategory === 'All' 
+  const filteredItems = selectedCategory === 'all' 
     ? menuItems 
     : menuItems.filter(item => item.category === selectedCategory);
+
+  // Get today's special items (highest popularity score)
+  const todaysSpecials = menuItems
+    .filter(item => item.available && item.popularity_score > 85)
+    .sort((a, b) => b.popularity_score - a.popularity_score)
+    .slice(0, 3);
+
+  // Get new dishes (recently added items)
+  const newDishes = menuItems
+    .filter(item => item.available)
+    .sort((a, b) => new Date(b.last_updated).getTime() - new Date(a.last_updated).getTime())
+    .slice(0, 4);
 
   const handlePaymentSubmit = async (paymentData: { screenshotUrl: string; method: string }) => {
     try {
@@ -131,21 +143,21 @@ export const MenuPage: React.FC = () => {
       >
         <div className="absolute inset-0 bg-black bg-opacity-10"></div>
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
               {businessInfo?.logo ? (
                 <img 
                   src={businessInfo.logo} 
                   alt={businessInfo.businessName}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-white border-opacity-30"
+                  className="w-16 h-16 rounded-full object-cover border-3 border-white border-opacity-30 shadow-lg"
                 />
               ) : (
-                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                  <Utensils className="w-6 h-6" />
+                <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center shadow-lg">
+                  <Utensils className="w-8 h-8" />
                 </div>
               )}
               <div>
-                <h1 className="text-2xl font-bold">
+                <h1 className="text-3xl font-bold mb-1">
                   {businessInfo?.businessName || 'Restaurant'}
                 </h1>
                 <div className="flex items-center space-x-4 text-sm opacity-90">
@@ -158,18 +170,169 @@ export const MenuPage: React.FC = () => {
                     <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </div>
+                <div className="mt-2">
+                  <span className="text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                    {settings?.orderType === 'dine-in' ? 'Dine In' : 'Takeaway'}
+                  </span>
+                </div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm opacity-90">
-                {settings?.orderType === 'dine-in' ? 'Dine In' : 'Takeaway'}
-              </div>
+              <div className="text-sm opacity-90 mb-1">Welcome!</div>
+              <div className="text-xs opacity-75">Scan • Order • Enjoy</div>
             </div>
           </div>
         </div>
       </div>
 
       <div className="px-4 py-6 pb-24">
+        {/* Today's Special Section */}
+        {todaysSpecials.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="p-2 rounded-full" style={{ backgroundColor: colors.primary }}>
+                <Flame className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold" style={{ color: colors.text }}>
+                Today's Special
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <div className="flex space-x-4 pb-2">
+                {todaysSpecials.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="flex-shrink-0 w-80 rounded-3xl overflow-hidden shadow-xl relative cursor-pointer transform transition-all duration-300 hover:scale-105"
+                    style={{ 
+                      backgroundColor: colors.cardBackground,
+                      border: `2px solid ${colors.primary}20`
+                    }}
+                    onClick={() => setSelectedMenuItem(item)}
+                  >
+                    <div className="relative h-48">
+                      <img
+                        src={item.photo || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg'}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1">
+                        <Star className="w-3 h-3 fill-current" />
+                        <span>Special</span>
+                      </div>
+                      <div className="absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">
+                        <span className="text-yellow-500">⭐</span>
+                        <span>{item.popularity_score}</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addItem(item);
+                        }}
+                        className="absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl transform transition-all duration-300 hover:scale-110 shadow-2xl"
+                        style={{ backgroundColor: colors.primary }}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg mb-2" style={{ color: colors.text }}>
+                        {item.name}
+                      </h3>
+                      <p className="text-sm mb-3 opacity-80 line-clamp-2" style={{ color: colors.textSecondary }}>
+                        {item.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl font-black" style={{ color: colors.primary }}>
+                          ${item.price.toFixed(2)}
+                        </span>
+                        {item.preparation_time > 0 && (
+                          <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
+                            <Clock className="w-3 h-3 mr-1" />
+                            {item.preparation_time}min
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* New Dishes Section */}
+        {newDishes.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="p-2 rounded-full" style={{ backgroundColor: colors.accent }}>
+                <ChefHat className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold" style={{ color: colors.text }}>
+                New Dishes
+              </h2>
+              <span 
+                className="text-sm px-2 py-1 rounded-full"
+                style={{ 
+                  backgroundColor: colors.accent + '20',
+                  color: colors.accent
+                }}
+              >
+                {newDishes.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {newDishes.map((item) => (
+                <div 
+                  key={item.id}
+                  className="rounded-2xl overflow-hidden shadow-lg relative cursor-pointer transform transition-all duration-300 hover:scale-105"
+                  style={{ 
+                    backgroundColor: colors.cardBackground,
+                    border: `1px solid ${colors.cardBorder}`
+                  }}
+                  onClick={() => setSelectedMenuItem(item)}
+                >
+                  <div className="relative h-32">
+                    <img
+                      src={item.photo || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg'}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                      New
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addItem(item);
+                      }}
+                      className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold transform transition-all duration-300 hover:scale-110 shadow-lg"
+                      style={{ backgroundColor: colors.primary }}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div className="p-3">
+                    <h3 className="font-semibold text-sm mb-1" style={{ color: colors.text }}>
+                      {item.name}
+                    </h3>
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-bold" style={{ color: colors.primary }}>
+                        ${item.price.toFixed(2)}
+                      </span>
+                      {item.preparation_time > 0 && (
+                        <span className="text-xs" style={{ color: colors.textSecondary }}>
+                          {item.preparation_time}min
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Category Filter */}
         <CategoryFilter
           categories={categories}
           activeCategory={selectedCategory}
@@ -178,6 +341,7 @@ export const MenuPage: React.FC = () => {
           colors={colors}
         />
 
+        {/* Menu Items Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
           {filteredItems.map((item) => (
             <MenuCard
