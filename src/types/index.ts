@@ -148,7 +148,7 @@ export interface User {
     language: 'en' | 'am';
     theme: string;
     notifications: boolean;
-    menuTheme?: 'classic' | 'modern' | 'elegant' | 'minimal';
+    menuTheme?: 'classic' | 'modern' | 'elegant' | 'minimal' | 'vibrant' | 'dark' | 'nature' | 'sunset';
   };
 }
 

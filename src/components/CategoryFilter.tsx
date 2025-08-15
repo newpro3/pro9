@@ -17,34 +17,35 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   colors,
 }) => {
   const getButtonStyles = (isActive: boolean) => {
-    const baseStyles = 'px-4 py-2 rounded-full whitespace-nowrap font-medium transition-all duration-200 border';
+    const baseStyles = 'px-6 py-3 rounded-full whitespace-nowrap font-medium transition-all duration-300 border-2 backdrop-blur-sm';
     
     if (isActive) {
-      return `${baseStyles} text-white shadow-lg transform scale-105`;
+      return `${baseStyles} text-white shadow-xl transform scale-105`;
     }
     
-    return `${baseStyles} hover:shadow-sm hover:scale-102`;
+    return `${baseStyles} hover:shadow-lg hover:scale-102 hover:backdrop-blur-md`;
   };
 
   return (
     <div 
-      className="sticky top-0 z-10 px-4 py-3 backdrop-blur-md border-b"
+      className="sticky top-0 z-10 px-4 py-4 backdrop-blur-md"
       style={{ 
-        backgroundColor: `${colors.surface}95`,
-        borderColor: colors.border
+        backgroundColor: `${colors.surface}90`
       }}
     >
-      <div className="flex space-x-2 overflow-x-auto scrollbar-hide">
+      <div className="flex space-x-3 overflow-x-auto scrollbar-hide pb-2">
         <button
           onClick={() => onCategoryChange('all')}
           className={getButtonStyles(activeCategory === 'all')}
           style={activeCategory === 'all' ? { 
             backgroundColor: colors.primary,
-            borderColor: colors.primary
+            borderColor: colors.primary,
+            boxShadow: `0 8px 25px ${colors.primary}40`
           } : { 
             backgroundColor: colors.cardBackground,
             color: colors.text,
-            borderColor: colors.cardBorder
+            borderColor: colors.cardBorder,
+            backdropFilter: 'blur(10px)'
           }}
         >
           All Items
@@ -56,11 +57,13 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
             className={getButtonStyles(activeCategory === category)}
             style={activeCategory === category ? { 
               backgroundColor: colors.primary,
-              borderColor: colors.primary
+              borderColor: colors.primary,
+              boxShadow: `0 8px 25px ${colors.primary}40`
             } : { 
               backgroundColor: colors.cardBackground,
               color: colors.text,
-              borderColor: colors.cardBorder
+              borderColor: colors.cardBorder,
+              backdropFilter: 'blur(10px)'
             }}
           >
             {category}

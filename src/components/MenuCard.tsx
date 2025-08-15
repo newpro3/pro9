@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Clock, Star } from 'lucide-react';
 import { MenuItem } from '../types';
 import { MenuTheme, ThemeColors } from '../hooks/useMenuTheme';
 
@@ -21,51 +21,107 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, onClick, onAddToCart, 
     switch (theme) {
       case 'modern':
         return {
-          card: 'rounded-2xl shadow-lg border-0 overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl backdrop-blur-sm',
+          card: 'rounded-3xl overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 backdrop-blur-sm relative group',
           image: 'aspect-square relative overflow-hidden',
-          content: 'p-4',
-          title: 'font-bold text-base mb-2 line-clamp-2',
-          description: 'text-sm mb-3 line-clamp-2',
-          price: 'font-black text-xl',
-          unavailable: 'absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center backdrop-blur-sm',
-          prepTime: 'absolute top-3 left-3 text-white text-xs px-3 py-1 rounded-full font-medium backdrop-blur-sm',
-          addButton: 'absolute bottom-3 right-3 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-xl transform transition-all duration-200 hover:scale-110 hover:shadow-2xl'
+          content: 'p-6',
+          title: 'font-bold text-lg mb-2 line-clamp-2',
+          description: 'text-sm mb-4 line-clamp-2 opacity-80',
+          price: 'font-black text-2xl',
+          unavailable: 'absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center backdrop-blur-sm rounded-3xl',
+          prepTime: 'absolute top-4 left-4 text-white text-xs px-3 py-1.5 rounded-full font-medium backdrop-blur-sm flex items-center gap-1',
+          addButton: 'absolute bottom-4 right-4 w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl transform transition-all duration-300 hover:scale-110 group-hover:scale-105 shadow-2xl',
+          rating: 'absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1'
         };
       case 'elegant':
         return {
-          card: 'rounded-xl shadow-md border overflow-hidden cursor-pointer transform transition-all duration-200 hover:shadow-xl hover:scale-102',
+          card: 'rounded-2xl overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-102 hover:shadow-2xl relative group border',
           image: 'aspect-square relative overflow-hidden',
-          content: 'p-4',
-          title: 'font-serif font-semibold text-base mb-2 line-clamp-2',
-          description: 'text-sm mb-3 line-clamp-2 italic',
-          price: 'font-serif font-bold text-lg',
-          unavailable: 'absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center',
-          prepTime: 'absolute top-2 left-2 text-white text-xs px-2 py-1 rounded font-medium',
-          addButton: 'absolute bottom-3 right-3 w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold shadow-lg transform transition-all duration-200 hover:scale-105'
+          content: 'p-5',
+          title: 'font-serif font-semibold text-lg mb-2 line-clamp-2',
+          description: 'text-sm mb-3 line-clamp-2 italic opacity-75',
+          price: 'font-serif font-bold text-xl',
+          unavailable: 'absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-2xl',
+          prepTime: 'absolute top-3 left-3 text-white text-xs px-3 py-1 rounded-lg font-medium backdrop-blur-sm flex items-center gap-1',
+          addButton: 'absolute bottom-4 right-4 w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold transform transition-all duration-300 hover:scale-110 shadow-xl',
+          rating: 'absolute top-3 right-3 bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1'
         };
       case 'minimal':
         return {
-          card: 'rounded-lg border overflow-hidden cursor-pointer transform transition-all duration-150 hover:shadow-md hover:border-opacity-50',
+          card: 'rounded-xl overflow-hidden cursor-pointer transform transition-all duration-200 hover:shadow-lg hover:border-opacity-50 relative group border',
           image: 'aspect-square relative overflow-hidden',
-          content: 'p-3',
-          title: 'font-medium text-sm mb-1 line-clamp-2',
-          description: 'text-xs mb-2 line-clamp-2',
-          price: 'font-semibold text-base',
-          unavailable: 'absolute inset-0 bg-gray-100 bg-opacity-90 flex items-center justify-center',
-          prepTime: 'absolute top-2 left-2 text-white text-xs px-2 py-1 rounded',
-          addButton: 'absolute bottom-2 right-2 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm transform transition-all duration-150 hover:scale-105'
+          content: 'p-4',
+          title: 'font-medium text-base mb-1 line-clamp-2',
+          description: 'text-xs mb-2 line-clamp-2 opacity-70',
+          price: 'font-semibold text-lg',
+          unavailable: 'absolute inset-0 bg-gray-100 bg-opacity-90 flex items-center justify-center rounded-xl',
+          prepTime: 'absolute top-2 left-2 text-white text-xs px-2 py-1 rounded font-medium backdrop-blur-sm flex items-center gap-1',
+          addButton: 'absolute bottom-3 right-3 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm transform transition-all duration-200 hover:scale-105',
+          rating: 'absolute top-2 right-2 bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded text-xs font-semibold flex items-center gap-1'
+        };
+      case 'vibrant':
+        return {
+          card: 'rounded-3xl overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 hover:rotate-1 relative group',
+          image: 'aspect-square relative overflow-hidden',
+          content: 'p-6',
+          title: 'font-bold text-lg mb-2 line-clamp-2',
+          description: 'text-sm mb-4 line-clamp-2',
+          price: 'font-black text-2xl',
+          unavailable: 'absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center backdrop-blur-sm rounded-3xl',
+          prepTime: 'absolute top-4 left-4 text-white text-xs px-3 py-1.5 rounded-full font-medium backdrop-blur-sm flex items-center gap-1',
+          addButton: 'absolute bottom-4 right-4 w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl transform transition-all duration-300 hover:scale-110 hover:rotate-12 shadow-2xl',
+          rating: 'absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1'
+        };
+      case 'dark':
+        return {
+          card: 'rounded-2xl overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 relative group border border-opacity-30',
+          image: 'aspect-square relative overflow-hidden',
+          content: 'p-5',
+          title: 'font-bold text-lg mb-2 line-clamp-2',
+          description: 'text-sm mb-4 line-clamp-2 opacity-80',
+          price: 'font-black text-xl',
+          unavailable: 'absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center backdrop-blur-sm rounded-2xl',
+          prepTime: 'absolute top-4 left-4 text-white text-xs px-3 py-1.5 rounded-full font-medium backdrop-blur-sm flex items-center gap-1',
+          addButton: 'absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold transform transition-all duration-300 hover:scale-110 shadow-2xl',
+          rating: 'absolute top-4 right-4 bg-black bg-opacity-70 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1 text-white'
+        };
+      case 'nature':
+        return {
+          card: 'rounded-2xl overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 relative group',
+          image: 'aspect-square relative overflow-hidden',
+          content: 'p-5',
+          title: 'font-semibold text-lg mb-2 line-clamp-2',
+          description: 'text-sm mb-4 line-clamp-2 opacity-75',
+          price: 'font-bold text-xl',
+          unavailable: 'absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm rounded-2xl',
+          prepTime: 'absolute top-4 left-4 text-white text-xs px-3 py-1.5 rounded-full font-medium backdrop-blur-sm flex items-center gap-1',
+          addButton: 'absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold transform transition-all duration-300 hover:scale-110 shadow-xl',
+          rating: 'absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1'
+        };
+      case 'sunset':
+        return {
+          card: 'rounded-2xl overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 relative group',
+          image: 'aspect-square relative overflow-hidden',
+          content: 'p-5',
+          title: 'font-bold text-lg mb-2 line-clamp-2',
+          description: 'text-sm mb-4 line-clamp-2 opacity-80',
+          price: 'font-black text-xl',
+          unavailable: 'absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center backdrop-blur-sm rounded-2xl',
+          prepTime: 'absolute top-4 left-4 text-white text-xs px-3 py-1.5 rounded-full font-medium backdrop-blur-sm flex items-center gap-1',
+          addButton: 'absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold transform transition-all duration-300 hover:scale-110 shadow-xl',
+          rating: 'absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1'
         };
       default: // classic
         return {
-          card: 'rounded-xl shadow-sm border overflow-hidden cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-lg',
+          card: 'rounded-xl overflow-hidden cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-lg relative group',
           image: 'aspect-square relative overflow-hidden',
-          content: 'p-3',
-          title: 'font-semibold text-sm mb-1 line-clamp-2',
-          description: 'text-xs mb-2 line-clamp-2',
+          content: 'p-4',
+          title: 'font-semibold text-base mb-1 line-clamp-2',
+          description: 'text-xs mb-2 line-clamp-2 opacity-75',
           price: 'font-bold text-lg',
           unavailable: 'absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center',
-          prepTime: 'absolute top-2 left-2 text-white text-xs px-2 py-1 rounded-full',
-          addButton: 'absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg transform transition-all duration-200 hover:scale-110'
+          prepTime: 'absolute top-3 left-3 text-white text-xs px-2 py-1 rounded-full font-medium backdrop-blur-sm flex items-center gap-1',
+          addButton: 'absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg transform transition-all duration-200 hover:scale-110',
+          rating: 'absolute top-3 right-3 bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1'
         };
     }
   };
@@ -78,14 +134,15 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, onClick, onAddToCart, 
       className={styles.card}
       style={{ 
         backgroundColor: colors.cardBackground,
-        border: `1px solid ${colors.cardBorder}`
+        border: `1px solid ${colors.cardBorder}`,
+        boxShadow: colors.shadow
       }}
     >
       <div className={styles.image}>
         <img
           src={item.photo || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg'}
           alt={item.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
           loading="lazy"
         />
         {!item.available && (
@@ -96,9 +153,16 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, onClick, onAddToCart, 
         {item.preparation_time > 0 && (
           <div 
             className={styles.prepTime}
-            style={{ backgroundColor: colors.warning }}
+            style={{ backgroundColor: `${colors.warning}90` }}
           >
+            <Clock className="w-3 h-3" />
             {item.preparation_time}min
+          </div>
+        )}
+        {item.popularity_score > 0 && (
+          <div className={styles.rating}>
+            <Star className="w-3 h-3 text-yellow-500 fill-current" />
+            {item.popularity_score}
           </div>
         )}
         {/* Always show add button for available items */}
@@ -125,10 +189,9 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, onClick, onAddToCart, 
           <span className={styles.price} style={{ color: colors.primary }}>
             ${item.price.toFixed(2)}
           </span>
-          {item.popularity_score > 0 && (
-            <div className="flex items-center text-yellow-500 text-xs">
-              <span>⭐</span>
-              <span className="ml-1">{item.popularity_score}</span>
+          {item.orders > 0 && (
+            <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
+              <span>{item.orders} orders</span>
             </div>
           )}
         </div>

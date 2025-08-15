@@ -407,7 +407,14 @@ export const Settings: React.FC = () => {
                 <option value="modern">Modern</option>
                 <option value="elegant">Elegant</option>
                 <option value="minimal">Minimal</option>
+                <option value="vibrant">Vibrant</option>
+                <option value="dark">Dark</option>
+                <option value="nature">Nature</option>
+                <option value="sunset">Sunset</option>
               </select>
+              <p className="text-sm text-gray-500 mt-1">
+                Changes will apply to all customer menu pages immediately
+              </p>
             </div>
 
             <div>
