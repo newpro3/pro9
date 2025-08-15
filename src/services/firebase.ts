@@ -25,16 +25,183 @@ class FirebaseService {
   // =======================
   async getMenuItems(userId: string): Promise<MenuItem[]> {
     try {
+      // First check if user has any menu items, if not create sample data
       const q = query(
         collection(db, 'menuItems'), 
         where('userId', '==', userId)
       );
       const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        // Create sample menu items and categories
+        await this.createSampleData(userId);
+        // Fetch again after creating sample data
+        const newSnapshot = await getDocs(q);
+        const items = newSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MenuItem));
+        return items.sort((a, b) => a.category.localeCompare(b.category));
+      }
+      
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MenuItem));
       return items.sort((a, b) => a.category.localeCompare(b.category));
     } catch (error) {
       console.error('Error fetching menu items:', error);
       return [];
+    }
+  }
+
+  private async createSampleData(userId: string): Promise<void> {
+    try {
+      // Create sample categories
+      const categories = [
+        { name: 'Appetizers', order: 1 },
+        { name: 'Main Dishes', order: 2 },
+        { name: 'Pizza', order: 3 },
+        { name: 'Pasta', order: 4 },
+        { name: 'Desserts', order: 5 },
+        { name: 'Beverages', order: 6 }
+      ];
+
+      for (const category of categories) {
+        await addDoc(collection(db, 'categories'), {
+          ...category,
+          userId,
+          created_at: new Date().toISOString(),
+        });
+      }
+
+      // Create sample menu items
+      const sampleItems = [
+        {
+          name: 'Bruschetta Trio',
+          description: 'Three varieties of our signature bruschetta with fresh tomatoes, basil, and mozzarella',
+          price: 12.99,
+          photo: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg',
+          category: 'Appetizers',
+          department: 'kitchen' as const,
+          available: true,
+          preparation_time: 8,
+          ingredients: 'Bread, Tomatoes, Basil, Mozzarella, Olive Oil',
+          allergens: 'Gluten, Dairy',
+          popularity_score: 92,
+          views: 245,
+          orders: 78,
+        },
+        {
+          name: 'Grilled Salmon',
+          description: 'Fresh Atlantic salmon grilled to perfection with herbs and lemon butter sauce',
+          price: 24.99,
+          photo: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg',
+          category: 'Main Dishes',
+          department: 'kitchen' as const,
+          available: true,
+          preparation_time: 18,
+          ingredients: 'Atlantic Salmon, Herbs, Lemon, Butter',
+          allergens: 'Fish, Dairy',
+          popularity_score: 88,
+          views: 189,
+          orders: 56,
+        },
+        {
+          name: 'Margherita Pizza',
+          description: 'Classic pizza with fresh tomatoes, mozzarella, and basil on our wood-fired crust',
+          price: 16.99,
+          photo: 'https://images.pexels.com/photos/315755/pexels-photo-315755.jpeg',
+          category: 'Pizza',
+          department: 'kitchen' as const,
+          available: true,
+          preparation_time: 15,
+          ingredients: 'Pizza Dough, Tomatoes, Mozzarella, Basil',
+          allergens: 'Gluten, Dairy',
+          popularity_score: 95,
+          views: 312,
+          orders: 124,
+        },
+        {
+          name: 'Truffle Carbonara',
+          description: 'Creamy pasta with pancetta, egg yolk, parmesan, and black truffle shavings',
+          price: 22.99,
+          photo: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg',
+          category: 'Pasta',
+          department: 'kitchen' as const,
+          available: true,
+          preparation_time: 12,
+          ingredients: 'Pasta, Pancetta, Eggs, Parmesan, Black Truffle',
+          allergens: 'Gluten, Dairy, Eggs',
+          popularity_score: 90,
+          views: 156,
+          orders: 43,
+        },
+        {
+          name: 'Tiramisu',
+          description: 'Traditional Italian dessert with coffee-soaked ladyfingers and mascarpone cream',
+          price: 8.99,
+          photo: 'https://images.pexels.com/photos/291528/pexels-photo-291528.jpeg',
+          category: 'Desserts',
+          department: 'kitchen' as const,
+          available: true,
+          preparation_time: 5,
+          ingredients: 'Ladyfingers, Coffee, Mascarpone, Cocoa',
+          allergens: 'Gluten, Dairy, Eggs',
+          popularity_score: 87,
+          views: 134,
+          orders: 67,
+        },
+        {
+          name: 'Craft Beer Selection',
+          description: 'Rotating selection of local craft beers on tap',
+          price: 6.99,
+          photo: 'https://images.pexels.com/photos/1552630/pexels-photo-1552630.jpeg',
+          category: 'Beverages',
+          department: 'bar' as const,
+          available: true,
+          preparation_time: 2,
+          ingredients: 'Local Craft Beer',
+          allergens: 'Gluten',
+          popularity_score: 82,
+          views: 98,
+          orders: 45,
+        },
+        {
+          name: 'Signature Cocktail',
+          description: 'House special cocktail with premium spirits and fresh ingredients',
+          price: 12.99,
+          photo: 'https://images.pexels.com/photos/1552630/pexels-photo-1552630.jpeg',
+          category: 'Beverages',
+          department: 'bar' as const,
+          available: true,
+          preparation_time: 5,
+          ingredients: 'Premium Spirits, Fresh Fruits, Herbs',
+          allergens: 'None',
+          popularity_score: 89,
+          views: 167,
+          orders: 78,
+        },
+        {
+          name: 'Mediterranean Bowl',
+          description: 'Fresh quinoa bowl with grilled vegetables, feta cheese, and tahini dressing',
+          price: 18.99,
+          photo: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg',
+          category: 'Main Dishes',
+          department: 'kitchen' as const,
+          available: true,
+          preparation_time: 10,
+          ingredients: 'Quinoa, Mixed Vegetables, Feta, Tahini',
+          allergens: 'Dairy, Sesame',
+          popularity_score: 86,
+          views: 123,
+          orders: 34,
+        }
+      ];
+
+      for (const item of sampleItems) {
+        await addDoc(collection(db, 'menuItems'), {
+          ...item,
+          userId,
+          last_updated: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.error('Error creating sample data:', error);
     }
   }
 
